@@ -1,7 +1,12 @@
 const CONFIG = {
-    googleScriptURL: "https://script.google.com/macros/s/AKfycbyWNbwaOEdYlHTBjhe7wvtWJCe3V3qfNUW9FK7xGEFwd7r2R5MZL8pwmYZVVU7vKBGH/exec",
-    storageKey: 'inscriptionsFormationIA'
+    storageKey: 'inscriptionsFormationIA',
+    supabaseUrl: (window.APP_CONFIG && window.APP_CONFIG.supabaseUrl) || 'https://YOUR_PROJECT_REF.supabase.co',
+    supabaseKey: (window.APP_CONFIG && window.APP_CONFIG.supabaseKey) || 'YOUR_SUPABASE_ANON_KEY'
   };
+
+  function isSupabaseConfigured() {
+    return CONFIG.supabaseUrl && CONFIG.supabaseUrl.includes('supabase.co') && CONFIG.supabaseKey && !CONFIG.supabaseKey.includes('YOUR_');
+  }
 
   function getInscriptions() {
     try {
@@ -16,6 +21,17 @@ const CONFIG = {
     localStorage.setItem(CONFIG.storageKey, JSON.stringify(data));
   }
 
+  async function fetchFromSupabase() {
+    if (!isSupabaseConfigured() || !window.supabase) {
+      throw new Error('Supabase non configuré');
+    }
+
+    const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+    const { data, error } = await client.from('inscriptions').select('*').order('created_at', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
   async function chargerInscriptions() {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('tableInscriptions').style.display = 'none';
@@ -23,16 +39,15 @@ const CONFIG = {
     let data = getInscriptions();
 
     try {
-      const reponse = await fetch(CONFIG.googleScriptURL + '?action=lire');
-      if (reponse.ok) {
-        const result = await reponse.json();
+      if (isSupabaseConfigured()) {
+        const result = await fetchFromSupabase();
         if (Array.isArray(result) && result.length > 0) {
           data = result;
           enregistrerInscriptions(data);
         }
       }
     } catch (error) {
-      console.warn('Lecture Google impossible, lecture locale utilisée.', error);
+      console.warn('Lecture Supabase impossible, lecture locale utilisée.', error);
     }
 
     afficherTableau(data);
@@ -87,13 +102,13 @@ const CONFIG = {
     }
 
     try {
-      await fetch(CONFIG.googleScriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'updateStatut', index, statut: nouveauStatut })
-      });
+      if (isSupabaseConfigured() && window.supabase) {
+        const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+        const { error } = await client.from('inscriptions').update({ statut: nouveauStatut }).eq('id', data[index].id);
+        if (error) throw error;
+      }
     } catch (error) {
-      console.warn('Mise à jour Google impossible, stockage local conservé.', error);
+      console.warn('Mise à jour Supabase impossible, stockage local conservé.', error);
     }
 
     setTimeout(chargerInscriptions, 200);
@@ -109,13 +124,13 @@ const CONFIG = {
     }
 
     try {
-      await fetch(CONFIG.googleScriptURL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'supprimer', index })
-      });
+      if (isSupabaseConfigured() && window.supabase) {
+        const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+        const { error } = await client.from('inscriptions').delete().eq('id', data[index].id);
+        if (error) throw error;
+      }
     } catch (error) {
-      console.warn('Suppression Google impossible, stockage local conservé.', error);
+      console.warn('Suppression Supabase impossible, stockage local conservé.', error);
     }
 
     setTimeout(chargerInscriptions, 200);

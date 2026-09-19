@@ -1,14 +1,19 @@
 // ⚙️ CONFIGURATION
 const CONFIG = {
-  googleScriptURL: "https://script.google.com/macros/s/AKfycbyWNbwaOEdYlHTBjhe7wvtWJCe3V3qfNUW9FK7xGEFwd7r2R5MZL8pwmYZVVU7vKBGH/exec",
   numeroOrange: "+226 07 99 99 67",
-  storageKey: 'inscriptionsFormationIA'
+  storageKey: 'inscriptionsFormationIA',
+  supabaseUrl: (window.APP_CONFIG && window.APP_CONFIG.supabaseUrl) || 'https://YOUR_PROJECT_REF.supabase.co',
+  supabaseKey: (window.APP_CONFIG && window.APP_CONFIG.supabaseKey) || 'YOUR_SUPABASE_ANON_KEY'
 };
 
 document.getElementById('numOrange').textContent = CONFIG.numeroOrange;
 
 const form = document.getElementById('inscriptionForm');
 const confirmation = document.getElementById('confirmation');
+
+function isSupabaseConfigured() {
+  return CONFIG.supabaseUrl && CONFIG.supabaseUrl.includes('supabase.co') && CONFIG.supabaseKey && !CONFIG.supabaseKey.includes('YOUR_');
+}
 
 function getInscriptions() {
   try {
@@ -33,6 +38,15 @@ function sauvegarderInscription(data) {
   const inscriptions = getInscriptions();
   inscriptions.push(data);
   localStorage.setItem(CONFIG.storageKey, JSON.stringify(inscriptions));
+}
+
+function saveToSupabase(data) {
+  if (!isSupabaseConfigured() || !window.supabase) {
+    throw new Error('Supabase non configuré');
+  }
+
+  const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+  return client.from('inscriptions').insert([{ ...data }]);
 }
 
 // Copier le numéro Orange Money
@@ -66,17 +80,16 @@ form.addEventListener('submit', async (e) => {
     numero: nextNumeroInscription(),
     nom: document.getElementById('nom').value.trim(),
     prenom: document.getElementById('prenom').value.trim(),
-    numPaiement: document.getElementById('numPaiement').value.trim(),
-    dateInscription: new Date().toLocaleString('fr-FR'),
+    num_paiement: document.getElementById('numPaiement').value.trim(),
+    date_inscription: new Date().toLocaleString('fr-FR'),
     statut: 'En attente'
   };
 
-  // Validation
   let valide = true;
   valide &= validerChamp('nom', data.nom.length >= 2, 'Nom trop court');
   valide &= validerChamp('prenom', data.prenom.length >= 2, 'Prénom trop court');
   valide &= validerChamp('numPaiement',
-    data.numPaiement.replace(/\D/g, '').length >= 8,
+    data.num_paiement.replace(/\D/g, '').length >= 8,
     'Numéro de paiement invalide');
 
   if (!valide) return;
@@ -85,32 +98,36 @@ form.addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = '⏳ Envoi en cours...';
 
-  let sauvegardeOK = false;
-
   try {
-    const response = await fetch(CONFIG.googleScriptURL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, action: 'ajouter' })
-    });
+    if (isSupabaseConfigured()) {
+      const { error } = await saveToSupabase({
+        numero: data.numero,
+        nom: data.nom,
+        prenom: data.prenom,
+        num_paiement: data.num_paiement,
+        date_inscription: data.date_inscription,
+        statut: data.statut
+      });
 
-    const result = await response.json();
-    sauvegardeOK = !!(result && result.ok);
-    if (!sauvegardeOK) {
-      throw new Error('Erreur de sauvegarde Google');
+      if (error) throw error;
+    } else {
+      throw new Error('Supabase non configuré');
     }
   } catch (error) {
-    console.warn('Google Script indisponible, stockage local utilisé.', error);
-  }
-
-  if (!sauvegardeOK) {
-    sauvegarderInscription(data);
+    console.warn('Supabase indisponible, stockage local utilisé.', error);
+    sauvegarderInscription({
+      ...data,
+      numPaiement: data.num_paiement,
+      dateInscription: data.date_inscription,
+      prenom: data.prenom,
+      nom: data.nom
+    });
   }
 
   document.getElementById('confNomComplet').textContent = `${data.prenom} ${data.nom}`;
   document.getElementById('confNumero').textContent = data.numero;
   document.getElementById('confNomComplet2').textContent = `${data.prenom} ${data.nom}`;
-  document.getElementById('confNumPaiement').textContent = data.numPaiement;
+  document.getElementById('confNumPaiement').textContent = data.num_paiement;
 
   form.classList.add('hidden');
   confirmation.classList.remove('hidden');
