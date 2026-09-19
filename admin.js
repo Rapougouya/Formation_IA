@@ -8,17 +8,37 @@ const CONFIG = {
     return CONFIG.supabaseUrl && CONFIG.supabaseUrl.includes('supabase.co') && CONFIG.supabaseKey && !CONFIG.supabaseKey.includes('YOUR_');
   }
 
+  function normaliserInscription(item, index = 0) {
+    const inscription = { ...(item || {}) };
+    inscription.numero = inscription.numero ?? String(index + 1).padStart(3, '0');
+    inscription.nom = inscription.nom ?? '';
+    inscription.prenom = inscription.prenom ?? '';
+    inscription.statut = inscription.statut ?? 'En attente';
+    inscription.date_inscription = inscription.date_inscription ?? inscription.dateInscription ?? '-';
+    inscription.dateInscription = inscription.date_inscription;
+    inscription.num_paiement = inscription.num_paiement ?? inscription.numPaiement ?? '';
+    inscription.numPaiement = inscription.num_paiement;
+    return inscription;
+  }
+
+  function reindexerInscriptions(data) {
+    return Array.isArray(data)
+      ? data.map((item, index) => normaliserInscription({ ...item, numero: String(index + 1).padStart(3, '0') }, index))
+      : [];
+  }
+
   function getInscriptions() {
     try {
       const saved = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]');
-      return Array.isArray(saved) ? saved : [];
+      return Array.isArray(saved) ? saved.map((item, index) => normaliserInscription(item, index)) : [];
     } catch {
       return [];
     }
   }
 
   function enregistrerInscriptions(data) {
-    localStorage.setItem(CONFIG.storageKey, JSON.stringify(data));
+    const normalized = Array.isArray(data) ? data.map((item, index) => normaliserInscription(item, index)) : [];
+    localStorage.setItem(CONFIG.storageKey, JSON.stringify(normalized));
   }
 
   async function fetchFromSupabase() {
@@ -42,7 +62,7 @@ const CONFIG = {
       if (isSupabaseConfigured()) {
         const result = await fetchFromSupabase();
         if (Array.isArray(result) && result.length > 0) {
-          data = result;
+          data = reindexerInscriptions(result);
           enregistrerInscriptions(data);
         }
       }
@@ -75,9 +95,9 @@ const CONFIG = {
   
       tr.innerHTML = `
         <td>${dateValue}</td>
-        <td><strong>${inscrit.numero || '-'}</strong></td>
-        <td><strong>${inscrit.nom}</strong></td>
-        <td>${inscrit.prenom}</td>
+        <td><strong>${inscrit.numero || String(index + 1).padStart(3, '0')}</strong></td>
+        <td><strong>${inscrit.nom || '-'}</strong></td>
+        <td>${inscrit.prenom || '-'}</td>
         <td><strong style="color:var(--orange)">${numeroPaiement}</strong></td>
         <td><span class="badge ${statutClass}">${inscrit.statut}</span></td>
         <td>
@@ -124,19 +144,48 @@ const CONFIG = {
     if (!confirm('Supprimer cet inscrit ?')) return;
 
     const data = getInscriptions();
-    if (data[index]) {
-      data.splice(index, 1);
-      enregistrerInscriptions(data);
-    }
+    const item = data[index];
+    if (!item) return;
+
+    const updated = data.filter((_, i) => i !== index);
+    const reindexed = reindexerInscriptions(updated);
+    enregistrerInscriptions(reindexed);
 
     try {
       if (isSupabaseConfigured() && window.supabase) {
         const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
-        const { error } = await client.from('inscriptions').delete().eq('id', data[index].id);
-        if (error) throw error;
+
+        if (item.id !== undefined && item.id !== null) {
+          const { error } = await client.from('inscriptions').delete().eq('id', item.id);
+          if (error) throw error;
+        }
+
+        for (const inscrit of reindexed) {
+          if (inscrit.id !== undefined && inscrit.id !== null) {
+            await client.from('inscriptions').update({ numero: inscrit.numero }).eq('id', inscrit.id);
+          }
+        }
       }
     } catch (error) {
       console.warn('Suppression Supabase impossible, stockage local conservé.', error);
+    }
+
+    setTimeout(chargerInscriptions, 200);
+  }
+
+  async function viderListe() {
+    if (!confirm('Tout supprimer ? Cette action effacera toutes les inscriptions.')) return;
+
+    localStorage.removeItem(CONFIG.storageKey);
+
+    try {
+      if (isSupabaseConfigured() && window.supabase) {
+        const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+        const { error } = await client.from('inscriptions').delete().neq('id', 0);
+        if (error) throw error;
+      }
+    } catch (error) {
+      console.warn('Vidage Supabase impossible, stockage local conservé.', error);
     }
 
     setTimeout(chargerInscriptions, 200);
