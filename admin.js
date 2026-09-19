@@ -57,6 +57,10 @@ const CONFIG = {
     document.getElementById('tableInscriptions').style.display = 'table';
   }
   
+  function valeurTexte(inscrit, cle, fallback = '-') {
+    return inscrit?.[cle] ?? inscrit?.[cle.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] ?? fallback;
+  }
+
   function afficherTableau(data) {
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = '';
@@ -66,13 +70,15 @@ const CONFIG = {
       const statutClass = inscrit.statut === 'Validé' ? 'badge-valid'
                          : inscrit.statut === 'Rejeté' ? 'badge-reject'
                          : 'badge-pending';
+      const dateValue = valeurTexte(inscrit, 'date_inscription', valeurTexte(inscrit, 'dateInscription'));
+      const numeroPaiement = valeurTexte(inscrit, 'num_paiement', valeurTexte(inscrit, 'numPaiement'));
   
       tr.innerHTML = `
-        <td>${inscrit.dateInscription || '-'}</td>
+        <td>${dateValue}</td>
         <td><strong>${inscrit.numero || '-'}</strong></td>
         <td><strong>${inscrit.nom}</strong></td>
         <td>${inscrit.prenom}</td>
-        <td><strong style="color:var(--orange)">${inscrit.numPaiement}</strong></td>
+        <td><strong style="color:var(--orange)">${numeroPaiement}</strong></td>
         <td><span class="badge ${statutClass}">${inscrit.statut}</span></td>
         <td>
           ${inscrit.statut === 'En attente' ? `
