@@ -190,5 +190,27 @@ const CONFIG = {
 
     setTimeout(chargerInscriptions, 200);
   }
+
+  function exporterExcel() {
+    const data = getInscriptions();
+    if (!Array.isArray(data) || data.length === 0) {
+      alert('Aucune inscription à exporter.');
+      return;
+    }
+
+    const rows = data.map((item) => ({
+      'N°': item.numero || '-',
+      'Nom': item.nom || '-',
+      'Prénom': item.prenom || '-',
+      'Numéro de paiement': item.num_paiement || item.numPaiement || '-',
+      'Date': item.date_inscription || item.dateInscription || '-',
+      'Statut': item.statut || 'En attente'
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Inscriptions');
+    XLSX.writeFile(wb, 'inscriptions-formation-ia.xlsx');
+  }
   
   chargerInscriptions();
