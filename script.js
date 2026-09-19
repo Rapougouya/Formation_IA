@@ -1,6 +1,6 @@
 // ⚙️ CONFIGURATION
 const CONFIG = {
-  googleScriptURL: "https://script.google.com/macros/s/1vugqSMU5SHxvm14SVO3GdYftXCUkB0t2pAeSz8wyVwgFxevKADE0ZHBc/exec",
+  googleScriptURL: "https://script.google.com/macros/s/AKfycbyWNbwaOEdYlHTBjhe7wvtWJCe3V3qfNUW9FK7xGEFwd7r2R5MZL8pwmYZVVU7vKBGH/exec",
   numeroOrange: "+226 70 00 00 00",
   storageKey: 'inscriptionsFormationIA'
 };
@@ -77,14 +77,19 @@ form.addEventListener('submit', async (e) => {
   btn.textContent = '⏳ Envoi en cours...';
 
   try {
-    await fetch(CONFIG.googleScriptURL, {
+    const response = await fetch(CONFIG.googleScriptURL, {
       method: 'POST',
-      mode: 'no-cors',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      body: JSON.stringify({ ...data, action: 'ajouter' })
     });
+
+    const result = await response.json();
+    if (!result || !result.ok) {
+      throw new Error('Erreur de sauvegarde Google');
+    }
   } catch (error) {
     console.warn('Google Script indisponible, stockage local utilisé.', error);
+    sauvegarderInscription(data);
   }
 
   sauvegarderInscription(data);

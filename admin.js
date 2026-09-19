@@ -1,5 +1,5 @@
 const CONFIG = {
-    googleScriptURL: "https://script.google.com/macros/s/1vugqSMU5SHxvm14SVO3GdYftXCUkB0t2pAeSz8wyVwgFxevKADE0ZHBc/exec",
+    googleScriptURL: "https://script.google.com/macros/s/AKfycbyWNbwaOEdYlHTBjhe7wvtWJCe3V3qfNUW9FK7xGEFwd7r2R5MZL8pwmYZVVU7vKBGH/exec",
     storageKey: 'inscriptionsFormationIA'
   };
 
@@ -88,7 +88,6 @@ const CONFIG = {
     try {
       await fetch(CONFIG.googleScriptURL, {
         method: 'POST',
-        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'updateStatut', index, statut: nouveauStatut })
       });
