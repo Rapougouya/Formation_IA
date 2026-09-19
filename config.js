@@ -1,4 +1,4 @@
 window.APP_CONFIG = {
-  supabaseUrl: 'https://YOUR_PROJECT_REF.supabase.co',
-  supabaseKey: 'YOUR_SUPABASE_ANON_KEY'
+  supabaseUrl: 'https://bvtlulkmvqredideowrz.supabase.co/rest/v1/',
+  supabaseKey: 'sb_publishable_vCOy4wpDagWvEJAHbpILxw_P8QixSeu'
 };
