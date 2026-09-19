@@ -1,7 +1,7 @@
 // ⚙️ CONFIGURATION
 const CONFIG = {
   googleScriptURL: "https://script.google.com/macros/s/AKfycbyWNbwaOEdYlHTBjhe7wvtWJCe3V3qfNUW9FK7xGEFwd7r2R5MZL8pwmYZVVU7vKBGH/exec",
-  numeroOrange: "+226 70 00 00 00",
+  numeroOrange: "+226 07 99 99 67",
   storageKey: 'inscriptionsFormationIA'
 };
 
@@ -17,6 +17,16 @@ function getInscriptions() {
   } catch {
     return [];
   }
+}
+
+function nextNumeroInscription() {
+  const inscriptions = getInscriptions();
+  const maxNumero = inscriptions.reduce((max, item) => {
+    const numero = Number(String(item.numero || '').replace(/\D/g, ''));
+    return Number.isFinite(numero) && numero > max ? numero : max;
+  }, 0);
+
+  return String(maxNumero + 1).padStart(3, '0');
 }
 
 function sauvegarderInscription(data) {
@@ -53,7 +63,7 @@ form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
   const data = {
-    numero: document.getElementById('numero').value.trim(),
+    numero: nextNumeroInscription(),
     nom: document.getElementById('nom').value.trim(),
     prenom: document.getElementById('prenom').value.trim(),
     numPaiement: document.getElementById('numPaiement').value.trim(),
@@ -63,7 +73,6 @@ form.addEventListener('submit', async (e) => {
 
   // Validation
   let valide = true;
-  valide &= validerChamp('numero', data.numero.length >= 1, 'Numéro requis');
   valide &= validerChamp('nom', data.nom.length >= 2, 'Nom trop court');
   valide &= validerChamp('prenom', data.prenom.length >= 2, 'Prénom trop court');
   valide &= validerChamp('numPaiement',
@@ -76,6 +85,8 @@ form.addEventListener('submit', async (e) => {
   btn.disabled = true;
   btn.textContent = '⏳ Envoi en cours...';
 
+  let sauvegardeOK = false;
+
   try {
     const response = await fetch(CONFIG.googleScriptURL, {
       method: 'POST',
@@ -84,15 +95,17 @@ form.addEventListener('submit', async (e) => {
     });
 
     const result = await response.json();
-    if (!result || !result.ok) {
+    sauvegardeOK = !!(result && result.ok);
+    if (!sauvegardeOK) {
       throw new Error('Erreur de sauvegarde Google');
     }
   } catch (error) {
     console.warn('Google Script indisponible, stockage local utilisé.', error);
-    sauvegarderInscription(data);
   }
 
-  sauvegarderInscription(data);
+  if (!sauvegardeOK) {
+    sauvegarderInscription(data);
+  }
 
   document.getElementById('confNomComplet').textContent = `${data.prenom} ${data.nom}`;
   document.getElementById('confNumero').textContent = data.numero;

@@ -64,6 +64,7 @@ const CONFIG = {
             <button class="btn-valid" onclick="changerStatut(${index}, 'Validé')">✓ Valider</button>
             <button class="btn-reject" onclick="changerStatut(${index}, 'Rejeté')">✗ Rejeter</button>
           ` : '-'}
+          <button class="btn-reject" onclick="supprimerInscription(${index})">🗑 Supprimer</button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -93,6 +94,28 @@ const CONFIG = {
       });
     } catch (error) {
       console.warn('Mise à jour Google impossible, stockage local conservé.', error);
+    }
+
+    setTimeout(chargerInscriptions, 200);
+  }
+
+  async function supprimerInscription(index) {
+    if (!confirm('Supprimer cet inscrit ?')) return;
+
+    const data = getInscriptions();
+    if (data[index]) {
+      data.splice(index, 1);
+      enregistrerInscriptions(data);
+    }
+
+    try {
+      await fetch(CONFIG.googleScriptURL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'supprimer', index })
+      });
+    } catch (error) {
+      console.warn('Suppression Google impossible, stockage local conservé.', error);
     }
 
     setTimeout(chargerInscriptions, 200);

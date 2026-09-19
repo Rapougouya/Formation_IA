@@ -104,6 +104,25 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (action === 'supprimer') {
+      const index = Number(body.index);
+      const sheet = getSheet();
+      const values = sheet.getDataRange().getValues();
+
+      if (values.length > 1 && !Number.isNaN(index) && index >= 0 && index < values.length - 1) {
+        const rowIndex = index + 2;
+        sheet.deleteRow(rowIndex);
+
+        return ContentService
+          .createTextOutput(JSON.stringify({ ok: true, message: 'Inscription supprimée' }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ ok: false, message: 'Index invalide' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     return ContentService
       .createTextOutput(JSON.stringify({ ok: false, message: 'Action inconnue' }))
       .setMimeType(ContentService.MimeType.JSON);
