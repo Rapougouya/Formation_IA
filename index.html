@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inscription - Formation IA pour Enseignants</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+  <div class="page-wrapper">
+    <div class="card">
+
+      <div class="card-header">
+        <div class="logo-badge">🎓</div>
+        <h1>Formation IA pour Enseignants</h1>
+        <p class="subtitle">Inscrivez-vous et validez votre paiement par Orange Money</p>
+      </div>
+
+      <div class="steps">
+        <div class="step active">
+          <span class="step-num">1</span>
+          <span>Inscription</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <span>Paiement</span>
+        </div>
+        <div class="step-line"></div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <span>Validation</span>
+        </div>
+      </div>
+
+      <form id="inscriptionForm" novalidate>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="numero">N° <span class="req">*</span></label>
+            <input type="text" id="numero" name="numero" required placeholder="Ex: 001">
+            <span class="error-msg" id="err-numero"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="nom">Nom <span class="req">*</span></label>
+            <input type="text" id="nom" name="nom" required placeholder="Ex: Ouédraogo">
+            <span class="error-msg" id="err-nom"></span>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="prenom">Prénom <span class="req">*</span></label>
+            <input type="text" id="prenom" name="prenom" required placeholder="Ex: Awa">
+            <span class="error-msg" id="err-prenom"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="numPaiement">Numéro de paiement <span class="req">*</span></label>
+            <input type="tel" id="numPaiement" name="numPaiement" required
+                   placeholder="Ex: 76 12 34 56">
+            <span class="error-msg" id="err-numPaiement"></span>
+          </div>
+        </div>
+
+        <!-- BLOC PAIEMENT ORANGE MONEY -->
+        <div class="payment-section">
+          <div class="payment-header">
+            <span class="orange-logo">🟠</span>
+            <div>
+              <h3>Paiement Orange Money</h3>
+              <p>Effectuez un dépôt de <strong>5 000 FCFA</strong> au numéro ci-dessous</p>
+            </div>
+          </div>
+
+          <div class="orange-number-box">
+            <span class="label">Numéro Orange Money à créditer :</span>
+            <div class="numero-display">
+              <strong id="numOrange">+226 70 00 00 00</strong>
+              <button type="button" class="btn-copy" onclick="copierNumero(event)">📋 Copier</button>
+            </div>
+            <span class="hint">Bénéficiaire : <strong>Nom de l'organisateur</strong></span>
+          </div>
+        </div>
+
+        <!-- RÉCAPITULATIF -->
+        <div class="recap">
+          <div class="recap-line">
+            <span>Frais de formation</span>
+            <strong>5 000 FCFA</strong>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit">
+          ✅ Envoyer mon inscription
+        </button>
+
+        <p class="rgpd">
+          En vous inscrivant, vous acceptez que vos informations soient utilisées
+          uniquement pour la gestion de cette formation.
+        </p>
+      </form>
+
+      <!-- CONFIRMATION -->
+      <div id="confirmation" class="confirmation hidden">
+        <div class="check-icon">✓</div>
+        <h2>Inscription enregistrée !</h2>
+        <p>Merci <strong id="confNomComplet"></strong>, votre demande a bien été reçue.</p>
+
+        <div class="waiting-box">
+          <p>⏳ <strong>Votre inscription est en attente de validation</strong></p>
+          <p>Après vérification de votre dépôt Orange Money, votre nom sera ajouté à la liste officielle.</p>
+        </div>
+
+        <div class="recap-confirm">
+          <div class="recap-line"><span>N°</span><strong id="confNumero"></strong></div>
+          <div class="recap-line"><span>Nom complet</span><strong id="confNomComplet2"></strong></div>
+          <div class="recap-line"><span>Numéro de paiement</span><strong id="confNumPaiement"></strong></div>
+          <div class="recap-line"><span>Statut</span><span class="badge-pending">⏳ En attente</span></div>
+        </div>
+
+        <button onclick="location.reload()" class="btn-secondaire">Nouvelle inscription</button>
+      </div>
+
+    </div>
+
+    <footer class="footer">
+      <p>© 2025 Formation IA pour Enseignants · Tous droits réservés</p>
+    </footer>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
