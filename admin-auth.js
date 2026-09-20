@@ -3,7 +3,7 @@
   const STORAGE_KEY = 'formationAdminAuth';
 
   function isAuthenticated() {
-    return sessionStorage.getItem(STORAGE_KEY) === '1';
+    return localStorage.getItem(STORAGE_KEY) === '1';
   }
 
   function createModal() {
@@ -60,7 +60,7 @@
     const submit = () => {
       const value = input.value.trim();
       if (value === ADMIN_PASSWORD) {
-        sessionStorage.setItem(STORAGE_KEY, '1');
+        localStorage.setItem(STORAGE_KEY, '1');
         closeModal();
         window.location.reload();
         return;
@@ -111,7 +111,7 @@
     },
 
     logout() {
-      sessionStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(STORAGE_KEY);
       window.location.href = 'index.html';
     }
   };
