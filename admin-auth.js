@@ -3,7 +3,25 @@
   const STORAGE_KEY = 'formationAdminAuth';
 
   function isAuthenticated() {
-    return localStorage.getItem(STORAGE_KEY) === '1';
+    try {
+      return localStorage.getItem(STORAGE_KEY) === '1' || sessionStorage.getItem(STORAGE_KEY) === '1';
+    } catch {
+      return false;
+    }
+  }
+
+  function setAuthenticated(value) {
+    try {
+      if (value) {
+        localStorage.setItem(STORAGE_KEY, '1');
+        sessionStorage.setItem(STORAGE_KEY, '1');
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+        sessionStorage.removeItem(STORAGE_KEY);
+      }
+    } catch {
+      // Ignore storage restrictions in restricted browsers.
+    }
   }
 
   function createModal() {
@@ -60,7 +78,7 @@
     const submit = () => {
       const value = input.value.trim();
       if (value === ADMIN_PASSWORD) {
-        localStorage.setItem(STORAGE_KEY, '1');
+        setAuthenticated(true);
         closeModal();
         window.location.reload();
         return;
@@ -111,7 +129,7 @@
     },
 
     logout() {
-      localStorage.removeItem(STORAGE_KEY);
+      setAuthenticated(false);
       window.location.href = 'index.html';
     }
   };
