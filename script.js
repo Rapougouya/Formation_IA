@@ -15,29 +15,25 @@ function isSupabaseConfigured() {
   return CONFIG.supabaseUrl && CONFIG.supabaseUrl.includes('supabase.co') && CONFIG.supabaseKey && !CONFIG.supabaseKey.includes('YOUR_');
 }
 
-function getInscriptions() {
-  try {
-    const saved = JSON.parse(localStorage.getItem(CONFIG.storageKey) || '[]');
-    return Array.isArray(saved) ? saved : [];
-  } catch {
-    return [];
+async function getNextNumeroFromSupabase() {
+  if (!isSupabaseConfigured() || !window.supabase) {
+    throw new Error('La configuration Supabase est absente ou incomplète.');
   }
-}
 
-function nextNumeroInscription() {
-  const inscriptions = getInscriptions();
-  const maxNumero = inscriptions.reduce((max, item) => {
+  const client = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseKey);
+  const { data, error } = await client
+    .from('inscriptions')
+    .select('numero')
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+
+  const maxNumero = (data || []).reduce((max, item) => {
     const numero = Number(String(item.numero || '').replace(/\D/g, ''));
     return Number.isFinite(numero) && numero > max ? numero : max;
   }, 0);
 
   return String(maxNumero + 1).padStart(3, '0');
-}
-
-function sauvegarderInscription(data) {
-  const inscriptions = getInscriptions();
-  inscriptions.push(data);
-  localStorage.setItem(CONFIG.storageKey, JSON.stringify(inscriptions));
 }
 
 function saveToSupabase(data) {
@@ -76,8 +72,14 @@ function validerChamp(id, condition, message) {
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
 
+  const numero = await getNextNumeroFromSupabase().catch(() => null);
+  if (!numero) {
+    alert('Le système de données n’est pas correctement configuré. Veuillez réessayer plus tard.');
+    return;
+  }
+
   const data = {
-    numero: nextNumeroInscription(),
+    numero,
     nom: document.getElementById('nom').value.trim(),
     prenom: document.getElementById('prenom').value.trim(),
     num_paiement: document.getElementById('numPaiement').value.trim(),
@@ -99,29 +101,26 @@ form.addEventListener('submit', async (e) => {
   btn.textContent = '⏳ Envoi en cours...';
 
   try {
-    if (isSupabaseConfigured()) {
-      const { error } = await saveToSupabase({
-        numero: data.numero,
-        nom: data.nom,
-        prenom: data.prenom,
-        num_paiement: data.num_paiement,
-        date_inscription: data.date_inscription,
-        statut: data.statut
-      });
-
-      if (error) throw error;
-    } else {
+    if (!isSupabaseConfigured()) {
       throw new Error('Supabase non configuré');
     }
-  } catch (error) {
-    console.warn('Supabase indisponible, stockage local utilisé.', error);
-    sauvegarderInscription({
-      ...data,
-      numPaiement: data.num_paiement,
-      dateInscription: data.date_inscription,
+
+    const { error } = await saveToSupabase({
+      numero: data.numero,
+      nom: data.nom,
       prenom: data.prenom,
-      nom: data.nom
+      num_paiement: data.num_paiement,
+      date_inscription: data.date_inscription,
+      statut: data.statut
     });
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Erreur d’inscription :', error);
+    alert('L’inscription n’a pas pu être enregistrée. Vérifiez la configuration Supabase et réessayez.');
+    btn.disabled = false;
+    btn.textContent = '✅ Envoyer mon inscription';
+    return;
   }
 
   document.getElementById('confNomComplet').textContent = `${data.prenom} ${data.nom}`;
